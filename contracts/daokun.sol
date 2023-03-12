@@ -3,12 +3,12 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract DAOCHAT is Ownable,AccessControl {
     string public NAME;
-    string public constant VOTE_ROLE = keccak256("VOTE_ROKE");
+    bytes32 public constant VOTE_ROLE = keccak256("VOTE_ROLE");
 
     string[] private VOTE_ID;
 
@@ -21,54 +21,71 @@ contract DAOCHAT is Ownable,AccessControl {
     // voteId → choiceId　→　結果
     mapping(string => mapping(string => uint256)) private CHOICE_RESULTS;
 
-    constructor (string name) {
+    constructor (string memory name) {
         NAME = name;
         _grantRole(VOTE_ROLE, msg.sender);
     }
 
-    function AddAdminMember(address AdminAddress) public {
-        grantRole(VOTE_ROLE,AdminAddress);
+    function AddMember(address newAdmin) public {
+        require(hasRole(VOTE_ROLE,msg.sender));
+         _grantRole(VOTE_ROLE, newAdmin);
     }
 
     function DeleteAdminMember(address AdminAddress) public {
+        require(hasRole(VOTE_ROLE,msg.sender));
         require(AdminAddress != msg.sender);
-        revokeRole(VOTE_ROLE,AdminAddress);
+        _revokeRole(VOTE_ROLE,AdminAddress);
     }
 
-    function AddAnswer(string memory vote_id,string[] memory choice_id,uint256[] count) public {
+    function AddVote(string memory voteId,string memory title,string[] memory choiceId) public {
         require(hasRole(VOTE_ROLE,msg.sender));
+
+        VOTE_ID.push(voteId);
+        VOTE[voteId] = title;
         
-        for (uint256 index = 0; index < choice_id.length; index++) {
-            CHOICE_RESULTS[vote_id][choice_id[index]] = count;
+        for (uint256 index = 0; index < choiceId.length; index++) {
+            CHOICE_ID[voteId].push(choiceId[index]);
         }
     }
 
-    function GetName() public view returns(string) {
+    function AddAnswer(string memory vote_id,string[] memory choice_id,uint256[] memory count) public {
+        require(hasRole(VOTE_ROLE,msg.sender));
+        
+        for (uint256 index = 0; index < choice_id.length; index++) {
+            CHOICE_RESULTS[vote_id][choice_id[index]] = count[index];
+        }
+    }
+
+    function GetName() public view returns(string memory name) {
         return NAME;
     }
 
     function GetVotes() public view returns(string[] memory ids,string[] memory titles) {
-        string[] respIds;
-        string[] respTitles;
+        string[] memory respIds = new string[](VOTE_ID.length);
+        string[] memory respTitles = new string[](VOTE_ID.length);
 
-        for (uint256 index = 0; index < VoteId.length; index++) {
-            respIds.push(VOTE_ID[index]);
-            respTitles.push(VOTE[VOTE_ID[index]]);
+        for (uint256 index = 0; index < VOTE_ID.length; index++) {
+            respIds[index]=VOTE_ID[index];
+            respTitles[index] = VOTE[VOTE_ID[index]];
         }
         return (respIds,respTitles);
     }
 
-    function GetChoices(string memory voteId) public view returns (string[] ids) {
+    function GetChoices(string memory voteId) public view returns (string[] memory ids) {
         return CHOICE_ID[voteId];
     }
 
-    function GetResult(string memory voteId) public view returns(string memory ids,uint256 memory results) {
-        string[] respIds;
-        uint256[] respResults;
+    function GetChoiceCount(string memory voteId) public view returns (uint256 ids) {
+        return CHOICE_ID[voteId].length;
+    }
+
+    function GetResult(string memory voteId,uint256 choice_count) public view returns(string[] memory ids,uint256[] memory results) {
+        string[] memory respIds = new string[](choice_count);
+        uint256[] memory respResults = new uint256[](choice_count);
 
         for (uint256 index = 0; index < CHOICE_ID[voteId].length; index++) {
-            respIds.push(CHOICE_ID[voteId][index]);
-            respResults.push(CHOICE_RESULTS[CHOICE_ID[voteId][index]]);
+            respIds[index] = CHOICE_ID[voteId][index];
+            respResults[index]=CHOICE_RESULTS[voteId][CHOICE_ID[voteId][index]];
         }
         return (respIds,respResults);
     }
