@@ -12,13 +12,13 @@ contract DAOCHAT is Ownable,AccessControl {
 
     string[] private VOTE_ID;
 
-    // VoteId → タイトル
+    // VoteId => title
     mapping (string => string) private VOTE;
 
-    // VoteId → ChoiceId
+    // VoteId => ChoiceId
     mapping (string=>string[]) CHOICE_ID;
 
-    // voteId → choiceId　→　結果
+    // voteId => choiceId　→　結果
     mapping(string => mapping(string => uint256)) private CHOICE_RESULTS;
 
     constructor (string memory name) {
